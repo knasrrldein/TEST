@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GSM Cycle</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f9f9f9;
+  }
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #ccc;
+  }
+  .tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background-color: #e0e0e0;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    border-radius: 5px 5px 0 0;
+    user-select: none;
+  }
+  .tab.active {
+    background-color: white;
+    font-weight: bold;
+    border-bottom: 2px solid white;
+  }
+  .tab-content {
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 0 5px 5px 5px;
+    background-color: white;
+  }
+  .step-block {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .step-number {
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+  }
+  .field-group {
+    margin-bottom: 10px;
+  }
+  .field-label {
+    font-weight: bold;
+    margin-bottom: 3px;
+    display: block;
+  }
+  input[readonly], textarea[readonly] {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f5f5f5;
+    font-family: inherit;
+    font-size: 0.95em;
+    resize: vertical;
+  }
+  textarea[readonly] {
+    min-height: 40px;
+  }
+  .actions {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  button.start-btn {
+    background-color: #28a745;
+    border: none;
+    color: white;
+    padding: 7px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  button.end-btn {
+    background-color: #dc3545;
+    border: none;
+    color: white;
+    padding: 7px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .time-label {
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #333;
+  }
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .history-table th, .history-table td {
+    border: 1px solid #aaa;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .history-table th {
+    background-color: #ddd;
+  }
+  .no-history {
+    font-style: italic;
+    color: #666;
+  }
+  .history-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+  }
+  .history-list li {
+    margin-bottom: 4px;
+    font-family: monospace;
+  }
+</style>
+</head>
+<body>
+
+<h1>GSM</h1>
+
+<div class="tabs">
+  <div class="tab active" data-tab="Test Cycle">Test Cycle</div>
+  <div class="tab" data-tab="Real Cycle">Real Cycle</div>
+  <div class="tab" data-tab="Delivery FS">Delivery FS</div>
+  <div class="tab" data-tab="History">History</div>
+</div>
+
+<div id="tab-contents">
+
+  <div class="tab-content" data-tab-content="Test Cycle">
+    <h2>Test Cycle Steps</h2>
+    <div id="test-cycle-steps-container">
+      <!-- Steps inserted here -->
+    </div>
+  </div>
+
+  <div class="tab-content" data-tab-content="Real Cycle" style="display:none;">
+    <h2>Real Cycle Steps</h2>
+    <div id="real-cycle-steps-container">
+      <!-- Steps inserted here -->
+    </div>
+  </div>
+
+  <div class="tab-content" data-tab-content="Delivery FS" style="display:none;">
+    <h2>Delivery FS Steps</h2>
+    <div id="delivery-fs-steps-container">
+      <!-- Steps inserted here -->
+    </div>
+  </div>
+
+  <div class="tab-content" data-tab-content="History" style="display:none;">
+    <h2>History</h2>
+    <button id="extract-history-btn" style="margin-bottom: 10px; padding: 7px 15px; font-weight: bold; cursor: pointer;">Extract History</button>
+    <div id="history-container">
+      <!-- History table inserted here -->
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Separate steps data for each tab
+  const testCycleSteps = [
+    {
+      name: "Step 1: DOC",
+      path: "/BSCS_WORK/NK_OPT_SCRIPTS/ALU_BIN/BCH_PARAGEN",
+      script: "sqlplus sysadm/sysadm @customer_history_package.sql",
+      log: "customer_history.log",
+      description: "Description for step 1"
+    },
+    {
+      name: "Step 2: Plan Your Approach",
+      path: "/BSCS_WORK/NK_OPT_SCRIPTS/ALU_BIN/BCH_PARAGEN",
+      script: "load for Oracle 16.1 (64 bit)",
+      log: "plan_approach.log",
+      description: "Description for step 2"
+    }
+  ];
+
+  const realCycleSteps = [
+    {
+      name: "Step 1: BCH",
+      path: "/REAL_CYCLE/PATH/STEP1",
+      script: "real_cycle_script1.sh",
+      log: "real_cycle_log1.log",
+      description: "Description for real cycle step 1"
+    },
+    {
+      name: "Step 2: FS",
+      path: "/REAL_CYCLE/PATH/STEP2",
+      script: "real_cycle_script2.sh",
+      log: "real_cycle_log2.log",
+      description: "Description for real cycle step 2"
+    }
+  ];
+
+  const deliveryFSSteps = [
+    {
+      name: "Step 1: Delivery FS Step One",
+      path: "/DELIVERY_FS/PATH/STEP1",
+      script: "delivery_fs_script1.sh",
+      log: "delivery_fs_log1.log",
+      description: "Description for delivery fs step 1"
+    },
+    {
+      name: "Step 2: Delivery FS Step Two",
+      path: "/DELIVERY_FS/PATH/STEP2",
+      script: "delivery_fs_script2.sh",
+      log: "delivery_fs_log2.log",
+      description: "Description for delivery fs step 2"
+    },
+    {
+      name: "Step 3: df",
+      path: "/DELIVERY_FS/PATH/STEP2",
+      script: "delivery_fs_script2.sh",
+      log: "delivery_fs_log2.log",
+      description: "Description for delivery fs step 2"
+    }
+  ];
+
+  // Utility to format date/time as string HH:mm:ss
+  function formatTime(date) {
+    if (!date) return "--:--:--";
+    return date.toLocaleTimeString();
+  }
+
+  // Save action to localStorage history array
+  function saveAction(tab, stepName, actionType, datetime) {
+    const key = `history_${tab}`;
+    let history = JSON.parse(localStorage.getItem(key)) || [];
+    history.push({
+      stepName,
+      actionType,
+      datetime: datetime ? datetime.toISOString() : null
+    });
+    localStorage.setItem(key, JSON.stringify(history));
+    renderHistory();
+  }
+
+  // Render steps for a tab - start/end times reset on refresh
+  function renderSteps(tab) {
+    let containerId = "";
+    let stepsArray = [];
+    if (tab === "Test Cycle") {
+      containerId = "test-cycle-steps-container";
+      stepsArray = testCycleSteps;
+    } else if (tab === "Real Cycle") {
+      containerId = "real-cycle-steps-container";
+      stepsArray = realCycleSteps;
+    } else if (tab === "Delivery FS") {
+      containerId = "delivery-fs-steps-container";
+      stepsArray = deliveryFSSteps;
+    } else {
+      return;
+    }
+
+    const container = document.getElementById(containerId);
+    container.innerHTML = "";
+
+    stepsArray.forEach((step, index) => {
+      const stepDiv = document.createElement("div");
+      stepDiv.className = "step-block";
+
+      stepDiv.innerHTML = `
+        <div class="step-number">${index + 1}.</div>
+        <div class="field-group">
+          <label class="field-label" for="step-name-${tab}-${index}">Step Name</label>
+          <input type="text" id="step-name-${tab}-${index}" readonly value="${step.name}" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="path-${tab}-${index}">Path</label>
+          <input type="text" id="path-${tab}-${index}" readonly value="${step.path}" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="script-${tab}-${index}">Script</label>
+          <input type="text" id="script-${tab}-${index}" readonly value="${step.script}" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="log-${tab}-${index}">Log</label>
+          <input type="text" id="log-${tab}-${index}" readonly value="${step.log}" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="description-${tab}-${index}">Description</label>
+          <textarea id="description-${tab}-${index}" readonly>${step.description}</textarea>
+        </div>
+        <div class="actions">
+          <button class="start-btn" style="background-color:#28a745;">Start</button>
+          <span class="time-label start-time">Start Time: --:--:--</span>
+          <button class="end-btn" style="background-color:#dc3545;">End</button>
+          <span class="time-label end-time">End Time: --:--:--</span>
+        </div>
+      `;
+
+      const startBtn = stepDiv.querySelector(".start-btn");
+      const endBtn = stepDiv.querySelector(".end-btn");
+      const startTimeLabel = stepDiv.querySelector(".start-time");
+      const endTimeLabel = stepDiv.querySelector(".end-time");
+
+      startBtn.addEventListener("click", () => {
+        const now = new Date();
+        startTimeLabel.textContent = "Start Time: " + formatTime(now);
+        saveAction(tab, step.name, "Start", now);
+      });
+
+      endBtn.addEventListener("click", () => {
+        const now = new Date();
+        endTimeLabel.textContent = "End Time: " + formatTime(now);
+        saveAction(tab, step.name, "End", now);
+      });
+
+      container.appendChild(stepDiv);
+    });
+  }
+
+  // Render history tab - show all actions for all tabs and steps
+  function renderHistory() {
+    const container = document.getElementById("history-container");
+    container.innerHTML = "";
+
+    const tabs = ["Test Cycle", "Real Cycle", "Delivery FS"];
+    let hasHistory = false;
+
+    tabs.forEach(tab => {
+      const key = `history_${tab}`;
+      const history = JSON.parse(localStorage.getItem(key)) || [];
+      if (history.length === 0) return;
+
+      hasHistory = true;
+
+      const tabHeader = document.createElement("h3");
+      tabHeader.textContent = tab;
+      container.appendChild(tabHeader);
+
+      const table = document.createElement("table");
+      table.className = "history-table";
+
+      const thead = document.createElement("thead");
+      thead.innerHTML = `
+        <tr>
+          <th>Step Name</th>
+          <th>Action</th>
+          <th>Date & Time</th>
+        </tr>
+      `;
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      history.forEach(record => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${record.stepName}</td>
+          <td>${record.actionType}</td>
+          <td>${record.datetime ? new Date(record.datetime).toLocaleString() : "--:--:--"}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      container.appendChild(table);
+    });
+
+    if (!hasHistory) {
+      container.innerHTML = '<p class="no-history">No history data saved yet.</p>';
+    }
+  }
+
+  // Tab switching logic
+  const tabs = document.querySelectorAll(".tab");
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      const selectedTab = tab.getAttribute("data-tab");
+
+      // Set active tab
+      tabs.forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+
+      // Show/hide tab contents
+      const tabContents = document.querySelectorAll("[data-tab-content]");
+      tabContents.forEach(tc => {
+        if (tc.getAttribute("data-tab-content") === selectedTab) {
+          tc.style.display = "block";
+        } else {
+          tc.style.display = "none";
+        }
+      });
+    });
+  });
+
+  // On page load
+  window.addEventListener("load", () => {
+    ["Test Cycle", "Real Cycle", "Delivery FS"].forEach(tab => {
+      renderSteps(tab);
+    });
+    renderHistory();
+
+    // Add event listener for extract history button
+    const extractBtn = document.getElementById("extract-history-btn");
+    if (extractBtn) {
+      extractBtn.addEventListener("click", extractHistory);
+    }
+  });
+
+  // Function to convert array of objects to CSV string
+  function arrayToCSV(data) {
+    if (!data.length) return "";
+
+    const keys = Object.keys(data[0]);
+    const csvRows = [];
+
+    // Header row
+    csvRows.push(keys.join(","));
+
+    // Data rows
+    data.forEach(row => {
+      const values = keys.map(key => {
+        let val = row[key] === null || row[key] === undefined ? "" : row[key];
+        val = val.toString().replace(/"/g, '""'); // Escape double quotes
+        if (val.search(/("|,|\n)/g) >= 0) {
+          val = `"${val}"`; // Wrap in double quotes if contains special chars
+        }
+        return val;
+      });
+      csvRows.push(values.join(","));
+    });
+
+    return csvRows.join("\n");
+  }
+
+  // Function to extract and download history as CSV file
+  function extractHistory() {
+    const tabs = ["Test Cycle", "Real Cycle", "Delivery FS"];
+    let csvContent = "Tab,Step Name,Action,Date & Time\n";
+
+    tabs.forEach(tab => {
+      const key = `history_${tab}`;
+      const history = JSON.parse(localStorage.getItem(key)) || [];
+      history.forEach(record => {
+        const row = {
+          Tab: tab,
+          "Step Name": record.stepName,
+          Action: record.actionType,
+          "Date & Time": record.datetime ? new Date(record.datetime).toLocaleString() : ""
+        };
+        csvContent += arrayToCSV([row]) + "\n";
+      });
+    });
+
+    const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent);
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "history_export.csv");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  }
+</script>
+
+</body>
+</html>
